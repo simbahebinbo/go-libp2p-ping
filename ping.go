@@ -26,7 +26,7 @@ func main() {
 	rmgr, _ := rcmgr.NewResourceManager(rcmgr.NewFixedLimiter(limits))
 	node, err := libp2p.New(
 		libp2p.ResourceManager(rmgr), // 禁用资源管理器
-		libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/0"),
+		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0", "/ip4/0.0.0.0/tcp/0/ws"),
 		libp2p.Ping(true),
 	)
 	if err != nil {
