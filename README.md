@@ -1,4 +1,4 @@
-# go-libp2p-ping
+# go-libp2p-ping-pong
 
 Ping example using [go-libp2p](https://github.com/libp2p/go-libp2p)
 
@@ -7,13 +7,13 @@ Based on https://docs.libp2p.io/tutorials/getting-started/go/ with some improvem
 ## Running
 
 ```sh
-go run .
+go run pong.go
 ```
 Copy the address from the output.
 
 In a separate console
 ```sh
-go run . <address>
+go run ping.go <address>
 ```
 The second node will ping the first one and print the latency.
 

@@ -3,13 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/host"
-	peerstore "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/host"
+	peerstore "github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	"github.com/multiformats/go-multiaddr"
 )
@@ -20,9 +22,12 @@ func main() {
 
 	// start a libp2p node that listens on a random local TCP port,
 	// but without running the built-in ping protocol
-	node, err := libp2p.New(ctx,
+	limits := rcmgr.InfiniteLimits
+	rmgr, _ := rcmgr.NewResourceManager(rcmgr.NewFixedLimiter(limits))
+	node, err := libp2p.New(
+		libp2p.ResourceManager(rmgr), // 禁用资源管理器
 		libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/0"),
-		libp2p.Ping(false),
+		libp2p.Ping(true),
 	)
 	if err != nil {
 		panic(err)
@@ -41,7 +46,7 @@ func main() {
 	fmt.Println("libp2p node address:", addrs)
 
 	// if a remote peer has been passed on the command line, connect to it
-	// and start pinging it
+	// and start ping it
 	// otherwise wait for a signal to stop
 	if len(os.Args) > 1 {
 		go pingPeer(ctx, node, pingService, os.Args[1])
@@ -60,6 +65,9 @@ func main() {
 }
 
 func pingPeer(ctx context.Context, node host.Host, pingService *ping.PingService, peerAddress string) {
+	ticker := time.NewTicker(2 * time.Second) // 每2秒触发一次
+	defer ticker.Stop()                       // 程序结束时停止 Ticker
+
 	addr, err := multiaddr.NewMultiaddr(peerAddress)
 	if err != nil {
 		panic(err)
@@ -72,9 +80,9 @@ func pingPeer(ctx context.Context, node host.Host, pingService *ping.PingService
 		panic(err)
 	}
 	fmt.Println("pinging peer at", addr)
-	ch := pingService.Ping(ctx, peer.ID)
-	for {
+	for range ticker.C {
+		ch := pingService.Ping(ctx, peer.ID)
 		res := <-ch
-		fmt.Println("ping RTT:", res.RTT)
+		fmt.Println("ping result:", res)
 	}
 }
